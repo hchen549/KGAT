@@ -538,17 +538,18 @@ class KGATTrainer(Trainer):
         super(KGATTrainer, self).__init__(config, model)
 
     def _train_epoch(self, train_data, epoch_idx, loss_func=None, show_progress=False):
-        # train rs
+        # train rs (BPR loss) 
         train_data.set_mode(KGDataLoaderState.RS)
         rs_total_loss = super()._train_epoch(train_data, epoch_idx, show_progress=show_progress)
 
-        # train kg
+        # train kg (TransR loss)
         train_data.set_mode(KGDataLoaderState.KG)
         kg_total_loss = super()._train_epoch(
             train_data, epoch_idx, loss_func=self.model.calculate_kg_loss, show_progress=show_progress
         )
 
         # update A
+        # update attension score after each epoch instead of each step (batch) for efficiency
         self.model.eval()
         with torch.no_grad():
             self.model.update_attentive_A()

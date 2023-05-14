@@ -265,7 +265,7 @@ class KGAT(KnowledgeRecommender):
         user_all_embeddings, entity_all_embeddings = self.forward()
         kgat_all_embeddings = torch.cat((user_all_embeddings, entity_all_embeddings), 0)
 
-
+        # data augmentation
         user_all_embeddings_1, entity_all_embeddings_1 = self.forward_1()
         user_all_embeddings_2, entity_all_embeddings_2 = self.forward_2()
 
@@ -295,13 +295,14 @@ class KGAT(KnowledgeRecommender):
 
         self.mode = 1 - self.mode       
 
-
+        # different levels of contrastive loss
+        # user-user level
         cts_loss = self.cts_loss(cts_embedding_1, cts_embedding_2, temp=1.0,
                                                         batch_size=cts_embedding_1.shape[0])
-                                                        
+        # entity-entity level                                     
         e_cts_loss = self.cts_loss(e_cts_embedding_1, e_cts_embedding_2, temp=1.0,
                                                         batch_size=e_cts_embedding_1.shape[0])
-
+        # user-entity level
         ui_cts_loss = self.cts_loss(u_embeddings, pos_embeddings, temp=1.0,
                                                         batch_size=u_embeddings.shape[0])
 
@@ -321,6 +322,8 @@ class KGAT(KnowledgeRecommender):
         pos_scores = torch.mul(u_embeddings, pos_embeddings).sum(dim=1)
         neg_scores = torch.mul(u_embeddings, neg_embeddings).sum(dim=1)
         mf_loss = self.mf_loss(pos_scores, neg_scores)
+        
+        # L2 regularization
         reg_loss = self.reg_loss(u_embeddings, pos_embeddings, neg_embeddings)
 #        print("cts_loss:", cts_loss, e_cts_loss, ui_cts_loss)
         loss = mf_loss + self.reg_weight * reg_loss + 0.01 * (cts_loss + e_cts_loss + ui_cts_loss) 
